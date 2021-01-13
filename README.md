@@ -1,5 +1,5 @@
 # lxc_gui
-X11 software compatible LXC containers for Arducopter Drone Simulations. The following process has been taken from [various](https://blog.simos.info/how-to-easily-run-graphics-accelerated-gui-apps-in-lxd-containers-on-your-ubuntu-desktop/) [blog](https://blog.simos.info/how-to-run-graphics-accelerated-gui-apps-in-lxd-containers-on-your-ubuntu-desktop/) [posts](https://blog.simos.info/running-x11-software-in-lxd-containers/) by [Simos Xenitellis](https://blog.simos.info/author/simos/) and combined here.
+X11 software compatible LXC containers for Arducopter Drone Simulations. The following lxc gui process has been taken from [various](https://blog.simos.info/how-to-easily-run-graphics-accelerated-gui-apps-in-lxd-containers-on-your-ubuntu-desktop/) [blog](https://blog.simos.info/how-to-run-graphics-accelerated-gui-apps-in-lxd-containers-on-your-ubuntu-desktop/) [posts](https://blog.simos.info/running-x11-software-in-lxd-containers/) by [Simos Xenitellis](https://blog.simos.info/author/simos/) and combined here.
 
 
 # Environement Setup
@@ -9,7 +9,7 @@ X11 software compatible LXC containers for Arducopter Drone Simulations. The fol
 ### Installing LXD
 To install LXD, see the website for instructions. For Ubuntu 16.04 and later, use the command:
 ```
-$ sudo apt install lxd 
+$ sudo apt-get install lxd 
 ```
 Run the following to verify which LXD channel you are tracking:
 ```
@@ -32,6 +32,11 @@ $ echo "root:$UID:1" | sudo tee -a /etc/subuid /etc/subgid
 root:1000:1
 $ 
 ```
+If this is your first time using LXD on your machine, then you will need to create a storage pool. This is done with the command:
+```
+lxd init 
+```
+You will be prompted many things, you can just hit enter for all of them to use the default settings. 
 
 ### Configuring Audio (host)
 
@@ -57,7 +62,7 @@ Now we will make an LXD profile that will help automatically setup a LXD contain
 $ echo $DISPLAY
 :1
 ```
-In my case, the output was ':1', so for the following code I use the value **X1** (as already shown below). Your output may be ':0', in which case you should use X0 instead. Copy the following text and save it to a file named **x11.profile**. 
+In my case, the output was ':1', so for the following code I use the value **X1** (as already shown below). Your output may be ':0', in which case you should use X0 instead. **If your host computer is not using nvidiagraphics, then set nvidia.runtime: "false"**. Copy the following text and save it to a file named **x11.profile**. 
 ```
 config:
   environment.DISPLAY: :0
@@ -152,3 +157,45 @@ You can run `xclock` which is an Xlib application. If it runs, it means that una
 You can run `glxgears` which requires OpenGL. If it runs, it means that you can run GPU accelerated software.
 
 To test the audio you can run the following command. You can open a second terminal and run it at  the same time on your host computer to confirm that both the host and the container are able to output audio: `speaker-test -Dpulse -c6 -twav`
+
+# Gazebo Drone Simulation Container Setup
+
+## Generate and Configure Container
+The first step is to clone this repository:
+```
+$ git clone https://github.com/buczek-j/lxc_gui.git
+```
+Next, download the [container tar-ball](https://drive.google.com/file/d/1W45GSETZKEjX6JpFoIKjg4A7eF89QJvh/view?usp=sharing) to your local images 
+```
+$ mkdir /home/localuser/myimages/
+$ cp ~/Downloads/DroneSim-U18-04.tar.bz /home/localuser/myimages/DroneSim-U18-04.tar.bz
+```
+Import the Gazebo Image from the tar-ball
+```
+$ lxc image import  /home/localuser/myimages/DroneSim-U18-04.tar.bz --alias Drone-Sim-Image
+```
+After following the steps above for setting up the Profile x11 (shown above), generate the container with the following command:
+```
+$ lxc launch Drone-Sim-Image --profile default --profile x11 drone-sim-container
+$ lxc exec drone-sim-container -- sudo --user ubuntu --login
+```
+
+**Now follow the Conatiner Configuration setup listed above**
+
+## Running Drone Simulation
+
+Running the drone simulation is simple. All you need to do is to log into the the container with one terminal and run the shell script:
+```
+ubuntu@drone-sim-container:~$ . ~/launch_gazebo.sh 1
+```
+**NOTE: The simulator also creates pop-up terminals. Do not close any these terminals, it will interupt the simulation**
+
+Where the number afterwards is the number of drones to simulate (above we generate 1 drone). The shell script generates gazebo world files from an erb world file and erb model. So any number of drones could be generated, the only limitations would be computational power and port allocation. For reference, this simulator has successfully tested 50 vehicles. 
+
+When you are done with the simulation, close everything by typing `Ctrl + C` in the container terminal. This will close the gazebo simulation as well as all of the pop-up terminals. 
+
+The SITL for the drones opens a TCP socket on the External IP of the container. This means that any flight control program (i.e. [BasicArdu](https://github.com/buczek-j/BasicArducopter)) can be run on the host machine and while the gazebo simulation is run on the container. The IP of the container gets displayed in the terminal where the `launch_gazebo.sh` was run. For example, the connection string might be "tcp:10.91.238.136:5762". For multiple vehicles, the ip remains the same, but the port number will increase by 10, for example:
+- "tcp:10.91.238.136:5762" for drone_0 (first drone instance)
+- "tcp:10.91.238.136:5772" for drone_1
+- "tcp:10.91.238.136:5782" for drone_2
+- . . .
