@@ -165,7 +165,7 @@ The first step is to clone this repository:
 ```
 $ git clone https://github.com/buczek-j/lxc_gui.git
 ```
-Next, download the [container tar-ball](https://drive.google.com/file/d/14WT563fmyivgvhI8kBLkZCq0Y6wzKCyZ/view?usp=sharing) to your local images 
+Next, download the [container tar-ball](https://drive.google.com/file/d/1NHAoq0MgMV-pTZzhCH4-qB7yCYfU16V9/view?usp=sharing) to your local images 
 ```
 $ mkdir /home/localuser/myimages/
 $ cp ~/Downloads/DroneSim-U18-04.tar.bz /home/localuser/myimages/DroneSim-U18-04.tar.bz
