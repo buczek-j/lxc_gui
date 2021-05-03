@@ -210,7 +210,7 @@ Change the line "gazebo /tmp/world.world & ext_vehicle.py -v ArduCopter -f gazeb
 ```
 gazebo /tmp/world.world & sim_vehicle.py -v ArduCopter -f gazebo-iris  -m --mav10 -n $num --custom-location "42.47777625687639,-71.19357940183706,174.0,0"
 ```
-Next, on the host computer, enable lxc port passthrough for all of the drone ports. This was taken from (this link)[https://discuss.linuxcontainers.org/t/forward-port-80-and-443-from-wan-to-container/2042]:
+Next, on the host computer, enable lxc port passthrough for all of the drone ports. This was taken from [this link](https://discuss.linuxcontainers.org/t/forward-port-80-and-443-from-wan-to-container/2042):
 
 ```
 $ lxc config device add drone-sim-container myport5762 proxy listen=tcp:0.0.0.0:5762 connect=tcp:127.0.0.1:5762
