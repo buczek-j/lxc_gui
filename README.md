@@ -172,7 +172,7 @@ $ cp ~/Downloads/DroneSim-U18-04.tar.bz /home/localuser/myimages/DroneSim-U18-04
 ```
 Import the Gazebo Image from the tar-ball
 ```
-$ lxc image import  /home/localuser/myimages/DroneSim-U18-04.tar.bz --alias Drone-Sim-Image
+$ lxc image import  /home/localuser/myimages/DroneSim-U18-04.tar.gz --alias Drone-Sim-Image
 ```
 After following the steps above for setting up the Profile x11 (shown above), generate the container with the following command:
 ```
@@ -199,3 +199,32 @@ The SITL for the drones opens a TCP socket on the External IP of the container. 
 - "tcp:10.91.238.136:5772" for drone_1
 - "tcp:10.91.238.136:5782" for drone_2
 - . . .
+
+To enable passthrough for other computers on the network, you can enable port passthrough. It is easiest to first change the drone-sim-container to connect on the local ip (127.0.0.1) first. Do this my modifying the file "launch_gazebo.sh".
+
+```
+ubuntu@drone-sim-container:~$ nano launch_gazebo.sh
+```
+
+Change the line "gazebo /tmp/world.world & ext_vehicle.py -v ArduCopter -f gazebo-iris  -m --mav10 -n $num --custom-location "42.47777625687639,-71.19357940183706,174.0,0"" to
+```
+gazebo /tmp/world.world & sim_vehicle.py -v ArduCopter -f gazebo-iris  -m --mav10 -n $num --custom-location "42.47777625687639,-71.19357940183706,174.0,0"
+```
+Next, on the host computer, enable lxc port passthrough for all of the drone ports. This was taken from (this link)[https://discuss.linuxcontainers.org/t/forward-port-80-and-443-from-wan-to-container/2042]:
+
+```
+$ lxc config device add drone-sim-container myport5762 proxy listen=tcp:0.0.0.0:5762 connect=tcp:127.0.0.1:5762
+$ lxc config device add drone-sim-container myport5772 proxy listen=tcp:0.0.0.0:5772 connect=tcp:127.0.0.1:5772
+. 
+.
+.
+$ lxc config device add drone-sim-container myport5812 proxy listen=tcp:0.0.0.0:5812 connect=tcp:127.0.0.1:5812
+```
+Now other computers on the host's network can connect to the simulation running in the host computer's lxc container via the host computer's ip address. For example:
+
+```
+$ python3
+>>> import dronekit
+>>> d = dronekit.connect('tcp:192.168.10.183:6762')
+>>> 
+```
